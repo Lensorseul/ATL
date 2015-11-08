@@ -1,0 +1,158 @@
+/* $Id:$ 
+ * Creation : October 19, 2015
+ * Licence  : EPL 
+ * Copyright:
+ * Authors  : 
+ *            berger
+ */
+@mainClass "transfos::Main"
+@mainOperation "main"
+
+
+package transfos;
+
+require kermeta
+require "platform:/resource/StateMachine/metaModels/StateMachine.ecore"
+
+using kermeta::io 
+using kermeta::standard
+using kermeta::persistence
+using SimplStateMachine
+
+class Main
+{
+	attribute indent : String
+	attribute path : String
+	attribute file : FileIO
+    operation pushIndent(): String is do
+    	result := "    "
+    end
+    
+    operation popIndent() is do
+    	if (indent != void and indent.size>0) then
+	    	indent := indent.substring(0, indent.size-4)
+	    end
+    end
+    
+    operation loadModel(fileName : String) : StateMachine is do
+		var repository : EMFRepository init EMFRepository.new
+ 		var resource : EMFResource 
+ 		resource ?= repository.createResource(fileName, "platform:/resource/StateMachine/metaModels/StateMachine.ecore")
+
+		resource.load
+		var sm : StateMachine
+		sm ?= resource.one
+		
+		result := sm
+	end
+	
+	/* *********************** */
+	operation renameState(smName : String) : String is do
+		var tabString : Sequence<String> init smName.split(" ")
+		var nom : String init ""
+		tabString.each{ x | String
+			
+			nom.append(x)
+		}
+		stdio.writeln(nom)
+		result := nom
+	end
+	
+	/* creation du fichier java */
+	operation createJavaFile(fileName : String, sm : StateMachine) : FileIO is do
+		var name : String init renameState(sm.name)
+		path := "platform:/resource/StateMachine/src/" + name + "Java.java"
+		file := FileIO.new
+		file.writeTextFile(path,"import com.pauware.pauware_engine._Core.*;\n"+
+													"import com.pauware.pauware_engine._Exception.*;\n"+
+													"import com.pauware.pauware_engine._Java_EE.*;\n"+
+													"import java.util.Scanner;")
+		file.writeTextFile(path,file.readTextFile(path)+"\n"+"public class "+name+"Java"+" {\n" )
+		file.writeTextFile(path,file.readTextFile(path)+pushIndent()+"AbstractStatechart_monitor _"+name+";" )
+		sm.states.each{s | declarationState(s)}
+		
+		init_structure()
+		
+		init_behavior(sm)
+		
+		result := file
+	end
+	
+	/* fonction init_structure vide */
+	operation init_structure() is do
+		file.writeTextFile(path,file.readTextFile(path)+"\n"+pushIndent()+"private void init_structure() throws Statechart_exception {\n"+pushIndent()+"}" )
+	end
+	/* fonction init_behavior */
+	operation init_behavior(sm : StateMachine) is do
+		file.writeTextFile(path,file.readTextFile(path)+"\n"+pushIndent()+"private void init_behavior() throws Statechart_exception {\n")
+		sm.states.each{s |behavior(s)}
+		file.writeTextFile(path,file.readTextFile(path)+pushIndent()+"_"+sm.initialState.referencedState.name+".inputState();")
+		stdio.writeln(sm.initialState.referencedState.name)
+	end
+	operation behavior(s : State) is do
+			if(CompositeState.isInstance(s)) then
+			var ch : Sequence<String>
+    		var compState : CompositeState
+    		compState ?=s
+    		compState.states.each{state|
+    			if(CompositeState.isInstance(state)) then
+    				behavior(state)
+    			else
+    				file.writeTextFile(path,file.readTextFile(path)+pushIndent()+"_"+state.name+" = new Statechart("+"\""+state.name+"\");")
+    				if(state.~operation != void) then
+    					file.writeTextFile(path,file.readTextFile(path)+pushIndent()+"_"+state.name+".doActivity(this,\""+state.name+"Activity\");")
+					end
+				end
+    		}
+    		file.writeTextFile(path,file.readTextFile(path)+pushIndent()+"_"+compState.initialState.referencedState.name+".inputState();")
+		else
+			file.writeTextFile(path,file.readTextFile(path)+pushIndent()+"_"+s.name+" = new Statechart("+"\""+s.name+"\");")
+		end
+	end
+	
+	/* déclaration des variables locales */
+    operation declarationState(s : State) is do
+    	
+    	if(CompositeState.isInstance(s)) then
+    		file.writeTextFile(path,file.readTextFile(path)+pushIndent()+"AbstractStatechart _"+s.name+";")
+    		var compState : CompositeState
+    		compState ?=s
+    		compState.states.each{state|
+    			if(CompositeState.isInstance(state)) then
+    				declarationState(state)
+    			else
+    				file.writeTextFile(path,file.readTextFile(path)+pushIndent()+"AbstractStatechart _"+state.name+";")
+				end
+    		}
+		else
+			file.writeTextFile(path,file.readTextFile(path)+pushIndent()+"AbstractStatechart _"+s.name+";")
+		end
+    end
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+	operation main() : Void is do 
+		var sm : StateMachine
+		var fileName : String init "platform:/resource/StateMachine"
+		var dirName : String
+		var modelName : String
+		
+		dirName := stdio.read("Directory of the model? [default=models] ")
+		if (dirName == "") then dirName := "models" end	
+		modelName := "Voiture.xmi"//stdio.read("Name of the model file? ")
+		fileName := fileName + "/" + dirName + "/" + modelName
+		
+		sm := loadModel(fileName)
+		stdio.writeln("\n === State machine loaded ===\n")
+		createJavaFile(fileName,sm)
+	end
+}
