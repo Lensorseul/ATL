@@ -84,7 +84,7 @@
   <events name="ralentir"/>
   <events name="accelerer"/>
   <variables xsi:type="SimplStateMachine:IntegerVariable" name="vitesse">
-    <value xsi:type="SimplStateMachine:IntegerData"/>
+    <value xsi:type="SimplStateMachine:IntegerData" value="5"/>
   </variables>
   <variables xsi:type="SimplStateMachine:BooleanVariable" name="maxAtteint">
     <value xsi:type="SimplStateMachine:BooleanData"/>

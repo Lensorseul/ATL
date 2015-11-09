@@ -1,0 +1,6 @@
+-- @path MM=/StateMachine/metaModels/StateMachine.ecore
+-- @path MM1=/StateMachine/metaModels/StateMachine.ecore
+
+module fefe;
+create OUT : MM1 from IN : MM;
+

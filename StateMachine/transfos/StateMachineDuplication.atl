@@ -1,3 +1,4 @@
+-- @path MM=/StateMachine/metaModels/StateMachine.ecore
 module StateMachineDuplication;
 
 create result : MM from model : MM;
@@ -259,12 +260,17 @@ do{
 	}
 	
 	if(sourceAssignment.expression.oclIsTypeOf(MM!Expression)){
-		--targetAssignment.variable.value.value <- thisModule.helperExpression1(sourceAssignment.expression);
-		--thisModule.a <- sourceAssignment.expression.right.value;
 		if(sourceAssignment.expression.operator.name = 'add'){
-			sourceAssignment.debug('addddddddddd');
-			sourceAssignment.expression.left.variable.oclType().debug();
-			sourceAssignment.expression.left.variable.debug();
+			if(sourceAssignment.expression.left.oclIsTypeOf(MM!VariableReference)){
+				thisModule.helperName(sourceAssignment.expression.left).value.value <- thisModule.helperVariableReference(sourceAssignment.expression.left) +
+				thisModule.helpExpressionAdd(sourceAssignment.expression);
+			}
+		}
+		if(sourceAssignment.expression.operator.name = 'sub'){
+			if(sourceAssignment.expression.left.oclIsTypeOf(MM!VariableReference)){
+				thisModule.helperName(sourceAssignment.expression.left).value.value <- thisModule.helperVariableReference(sourceAssignment.expression.left) -
+				thisModule.helpExpressionAdd(sourceAssignment.expression);
+			}
 		}
 	} 
 		
@@ -365,3 +371,20 @@ helper def : helpInteger(integerdata : MM!IntegerData) : Integer =
 helper def : helpBoolean(booldata : MM!BooleanData) : Boolean = 
 	booldata.value
 	; 
+
+helper def : helperVariableReference(var : MM!VariableReference) : OclAny =
+		MM!IntegerVariable.allInstances()->
+		select(int | int.name = var.variable.name)->first().value.value
+	;
+
+helper def : helperName(var : MM!VariableReference) : OclAny =
+		MM!IntegerVariable.allInstances()->
+		select(int | int.name = var.variable.name)->first()
+	;
+helper def : helpExpressionAdd(exp : MM!Expression) : Integer =
+	if exp.right.oclIsTypeOf(MM!IntegerVariable) then
+		exp.right.value.value
+	else
+		exp.right.value
+	endif
+	;
