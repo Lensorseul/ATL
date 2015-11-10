@@ -272,6 +272,18 @@ do{
 				thisModule.helpExpressionAdd(sourceAssignment.expression);
 			}
 		}
+		if(sourceAssignment.expression.operator.name = 'div'){
+			if(sourceAssignment.expression.left.oclIsTypeOf(MM!VariableReference)){
+				thisModule.helperName(sourceAssignment.expression.left).value.value <- thisModule.helperVariableReference(sourceAssignment.expression.left) /
+				thisModule.helpExpressionAdd(sourceAssignment.expression);
+			}
+		}
+		if(sourceAssignment.expression.operator.name = 'mul'){
+			if(sourceAssignment.expression.left.oclIsTypeOf(MM!VariableReference)){
+				thisModule.helperName(sourceAssignment.expression.left).value.value <- thisModule.helperVariableReference(sourceAssignment.expression.left) *
+				thisModule.helpExpressionAdd(sourceAssignment.expression);
+			}
+		}
 	} 
 		
 	}
